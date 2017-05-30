@@ -4284,6 +4284,14 @@ typedef enum {
      *  refer to WMI_PDEV_PKT_PWR_SAVE_LEVEL
      */
     WMI_PDEV_PARAM_PACKET_POWER_SAVE_LEVEL,
+    /** Define IOT pattern to be enabled/disabled
+      * bit values: 0 - disable, 1 - enable
+      * BIT[0..31]: each bit represents an IOT pattern
+      * -----
+      * Bit 0 - avoid SMPS with certain APs
+      * Bits 31:1 - reserved
+      */
+    WMI_PDEV_PARAM_SET_IOT_PATTERN,
 } WMI_PDEV_PARAM;
 
 typedef struct {
@@ -13833,6 +13841,8 @@ typedef struct {
     A_UINT32 nan_csid;
     /** Actual number of bytes in TLV nan_scid */
     A_UINT32 nan_scid_len;
+    /** Self NDI mac address */
+    wmi_mac_addr self_ndi_mac_addr;
     /**
      * TLV (tag length value) parameters follow the ndp_indication
      * structure. The TLV's are:
@@ -17924,6 +17934,10 @@ typedef enum wmi_coex_config_type {
                                                  arg5 PTA algorithm (WMI_COEX_ALGO_TYPE),
                                                  arg6 PTA priority */
     WMI_COEX_CONFIG_BTC_DUTYCYCLE       = 18, /* config interval (ms units) (arg1 WLAN pause duration, arg2 WLAN unpause duration) for WLAN UL + BT Rx */
+    WMI_COEX_CONFIG_HANDOVER_RSSI       = 19, /* config to set WLAN RSSI (dBm units) at which device switches from Hybrid to TDD coex mode */
+    WMI_COEX_CONFIG_PTA_BT_INFO         = 20, /* get BT information,
+                                                 arg1 BT info type: WMI_COEX_PTA_BT_INFO_TYPE_T, scan/advertise/connection info,
+                                                 arg2-arg5: BT information parameters */
 } WMI_COEX_CONFIG_TYPE;
 
 typedef struct {

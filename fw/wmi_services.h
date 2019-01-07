@@ -361,6 +361,14 @@ typedef  enum  {
      * htt_ppdu_stats_user_cmpltn_common_tlv.ack_rssi;
      */
     WMI_SERVICE_HW_DB2DBM_CONVERSION_SUPPORT = 178,
+    WMI_SERVICE_SUPPORT_EXTEND_ADDRESS=179, /* indicates firmware supports host memory addresses larger than 32 bit */
+    WMI_SERVICE_BEACON_RECEPTION_STATS=180, /* Support per vdev beacon stats info */
+    WMI_SERVICE_FETCH_TX_PN=181,
+    WMI_SERVICE_PEER_UNMAP_RESPONSE_SUPPORT = 182, /* support peer ids unmap response from host */
+    WMI_SERVICE_TX_PER_PEER_AMPDU_SIZE = 183, /* indicate FW support per peer TX AMPDU size */
+    WMI_SERVICE_BSS_COLOR_SWITCH_COUNT = 184, /* Firmware supports bss-color switch count handling */
+    WMI_SERVICE_HTT_PEER_STATS_SUPPORT = 185, /* Supports the feature where FW sends peer stats autonomously to Host via the HTT_T2H PEER_STATS_IND message */
+    WMI_SERVICE_UL_RU26_ALLOWED = 186, /* indicates support for RU26 in UL OFDMA */
 
 
     /******* ADD NEW SERVICES HERE *******/

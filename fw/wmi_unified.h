@@ -5546,6 +5546,17 @@ typedef enum {
      */
     WMI_PDEV_PARAM_SET_TBTT_CTRL,
 
+    /*
+     * BITS0 ~1 (refer to enum)
+     * 0 - default --> always update
+     * 1 - ignore to update
+     * 2 - update if larger than threshould
+     * 3 - update if less or equal than threshould
+     *
+     * BITS 2 ~ 31 Threshould
+     */
+    WMI_PDEV_PARAM_NAV_OVERRIDE_CONFIG,
+
 } WMI_PDEV_PARAM;
 
 typedef struct {
@@ -6833,33 +6844,9 @@ typedef struct {
      */
     A_UINT32 req_interval;
 /*
- * This TLV is followed by another TLV of array of struct
- *   size of(struct wmi_wlm_link_stats);
+ * This TLV is followed by an A_UINT32 array TLV carrying an opaque payload.
  */
 } wmi_wlm_stats_event_fixed_param;
-
-/** wlan latency manager stats report */
-typedef struct {
-    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_wlm_link_stats */
-    /** average beacon rssi in dbm */
-    A_INT32 bcn_rssi;
-    /** scan period, in units of percentage of req_interval */
-    A_UINT32 scan_period;
-    /** power on period, in units of percentage of req_interval */
-    A_UINT32 pwr_on_period;
-    /** congestion level, in units of percentage of req_interval */
-    A_UINT32 congestion_level;
-    /** total phy_err count within req_interval */
-    A_UINT32 phy_err;
-    /** total mpdu_err count within req_interval */
-    A_UINT32 mpdu_err;
-    /** last TX rate in Mbps to bss peer */
-    A_UINT32 last_tx_rate;
-    /** num_ac - how many elements of the ac_stats array contain valid data */
-    A_UINT32 num_ac;
-    /** wmm ac stats */
-    wmi_wmm_ac_stats ac_stats[WLAN_MAX_AC];
-} wmi_wlm_link_stats;
 
 /** Suspend option */
 enum {
@@ -16046,6 +16033,16 @@ typedef enum {
     WMI_PEER_TID_CONFIG_RATE_CONTROL_AUTO,
     /** Fixed rate control */
     WMI_PEER_TID_CONFIG_RATE_CONTROL_FIXED_RATE,
+    /** Set the Default lowest rate (6Mbps in 5GHZ and 1Mbps in 2GHZ) */
+    WMI_PEER_TID_CONFIG_RATE_CONTROL_DEFAULT_LOWEST_RATE,
+    /**
+     * Set the highest rate cap allowed for this TID.
+     * Rate cap is specified in rate code format,
+     * i.e. NSS and MCS combined as shown below:
+     * b'5-b'4 indicate the NSS (0 - 1x1, 1 - 2x2, 2 - 3x3, 3 - 4x4)
+     * b'3-b'0 indicate the MCS
+     */
+    WMI_PEER_TID_CONFIG_RATE_UPPER_CAP,
 } WMI_PEER_TID_CONFIG_RATE_CONTROL;
 
 /**

@@ -425,6 +425,7 @@ typedef struct {
  * because the host should have no references to these target-only data
  * structures.
  */
+#ifndef CONFIG_MOVE_RC_STRUCT_TO_MACCORE
 #if !((NUM_SPATIAL_STREAM > 4) || SUPPORT_11AX)
   #if defined(CONFIG_AR900B_SUPPORT) || defined(AR900B)
   typedef struct{
@@ -494,6 +495,7 @@ typedef struct {
       A_UINT8     dd_profile;
   } RC_TX_RATE_INFO;
 #endif /* !((NUM_SPATIAL_STREAM > 4) || SUPPORT_11AX) */
+#endif /* CONFIG_MOVE_RC_STRUCT_TO_MACCORE */
 #endif
 
 /*
@@ -525,6 +527,13 @@ typedef struct {
    A_UINT32 ptr;
    /** size of the chunk */
    A_UINT32 size;
+    /** ptr_high
+     * most significant bits of physical address of the memory chunk
+     * Only applicable for addressing more than 32 bit.
+     * This will only be non-zero if the target has set
+     * WMI_SERVICE_SUPPORT_EXTEND_ADDRESS flag.
+     */
+   A_UINT32 ptr_high;
 } wlan_host_memory_chunk;
 
 #define NUM_UNITS_IS_NUM_VDEVS        0x1

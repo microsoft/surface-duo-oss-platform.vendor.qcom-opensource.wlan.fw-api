@@ -6848,6 +6848,7 @@ typedef enum {
     WMI_CHAN_WIDTH_80P80 = 4,
     WMI_CHAN_WIDTH_5     = 5,
     WMI_CHAN_WIDTH_10    = 6,
+    WMI_CHAN_WIDTH_165   = 7,
 } wmi_channel_width;
 
 /*Clear stats*/
@@ -10055,6 +10056,12 @@ WMI_VDEV_PARAM_ROAM_FW_OFFLOAD WMI_VDEV_PARAM **/
 #define WMI_ROAM_FW_OFFLOAD_ENABLE_FLAG                          0x1
 /* Enable Roaming module in FW to do scan based on Final BMISS */
 #define WMI_ROAM_BMISS_FINAL_SCAN_ENABLE_FLAG                    0x2
+/**
+	 * To enable/desable EAPOL_4WAY_HANDSHAKE process while roaming. 
+	 * param value = 0 --> Enable EAPOL 4way handshake
+     * param value = 1 --> Skip EAPOL 4way handshake  
+	 */
+#define WMI_VDEV_PARAM_SKIP_ROAM_EAPOL_4WAY_HANDSHAKE           0x4
 
 /** slot time long */
 #define WMI_VDEV_SLOT_TIME_LONG                                  0x1
@@ -10126,6 +10133,7 @@ typedef struct {
 #define WMI_VDEV_START_RESPONSE_NOT_SUPPORTED  0x2  /** unsupported VDEV combination */
 #define WMI_VDEV_START_RESPONSE_DFS_VIOLATION  0x3  /** DFS_VIOLATION since channel in the NOL is selected */
 #define WMI_VDEV_START_RESPONSE_INVALID_REGDOMAIN 0x4 /** Invalid regulatory domain in VDEV start */
+#define WMI_VDEV_START_RESPONSE_INVALID_BAND   0x5    /** Band unsupported by current hw mode in VDEV start */
 
 /** Beacon processing related command and event structures */
 typedef struct {
@@ -13486,6 +13494,7 @@ typedef enum wake_reason_e {
     WOW_REASON_WLAN_BL, /* baselining done */
     WOW_REASON_NTH_BCN_OFLD, /* nth beacon forward to host */
     WOW_REASON_PKT_CAPTURE_MODE_WAKE,
+    WOW_REASON_PAGE_FAULT, /* Host wake up due to page fault */
 
     /* add new WOW_REASON_ defs before this line */
     WOW_REASON_MAX,
@@ -22689,6 +22698,10 @@ typedef enum wmi_coex_config_type {
      * config msw mute duration (ms units) after MPTA interrupt fired
      */
     WMI_COEX_CONFIG_MPTA_HELPER_WLAN_MUTE_DURATION   = 41,
+    /* WMI_COEX_CONFIG_BT_SCO_ALLOW_WLAN_2G_SCAN
+     * allow WLAN scan on 2.4G channel when BT SCO connectivity is alive
+     */
+    WMI_COEX_CONFIG_BT_SCO_ALLOW_WLAN_2G_SCAN   = 42,
 } WMI_COEX_CONFIG_TYPE;
 
 typedef struct {
@@ -24939,15 +24952,7 @@ typedef struct {
      * [7:0]  : channel metric -  0 = unusable, 1 = worst, 100 = best
      * [11:8] : channel BW - This bit-field uses values compatible with
      *          enum definitions used internally within the target's
-     *          halphy code.  These values are specified below.
-     *              BW_20MHZ    = 0,
-     *              BW_40MHZ    = 1,
-     *              BW_80MHZ    = 2,
-     *              BW_160MHZ   = 3,
-     *              BW_80P80MHZ = 4,
-     *              BW_5MHZ     = 5,
-     *              BW_10MHZ    = 6,
-     *              BW_165MHZ   = 7,
+     *          halphy code.  This bit field uses wmi_channel_width.
      * [15:12]: Reserved
      * [31:16]: Frequency - Center frequency of the channel for which
      *          the RF characterisation info applies (MHz)

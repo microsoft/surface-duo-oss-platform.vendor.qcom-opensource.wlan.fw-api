@@ -6861,6 +6861,9 @@ typedef enum {
      */
     WMI_PDEV_PARAM_SR_TRIGGER_MARGIN,
 
+    /* Param to enable/disable PCIE HW ILP */
+    WMI_PDEV_PARAM_PCIE_HW_ILP,
+
 } WMI_PDEV_PARAM;
 
 #define WMI_PDEV_ONLY_BSR_TRIG_IS_ENABLED(trig_type) WMI_GET_BITS(trig_type, 0, 1)
@@ -8052,8 +8055,20 @@ typedef struct {
     A_UINT32 center_freq1;
     /** msecs the radio is awake (32 bits number accruing over time) */
     A_UINT32 radio_awake_time;
-    /** msecs the CCA register is busy (32 bits number accruing over time) */
+    /** msecs the CCA register is busy (32 bits number accruing over time)
+     * Includes rx_time but not tx_time.
+     */
     A_UINT32 cca_busy_time;
+    /** msecs the radio is transmitting (32 bits number accruing over time) */
+    A_UINT32 tx_time;
+    /** msecs the radio is in active receive (32 bits number accruing over time) */
+    A_UINT32 rx_time;
+    /*** NOTE ***
+     * Be cautious about adding new fields in wmi_channel_stats.
+     * STA-centric targets may instantiate many instances of per-channel
+     * stats, and consequently may consume a non-trivial amount of on-chip
+     * memory for storing the channel stats.
+     */
 } wmi_channel_stats;
 
 /*
@@ -9509,6 +9524,11 @@ typedef struct {
                                                     * VDEV_FLAGS_NON_TRANSMIT_AP classify it as either Tx vap
                                                     * or non Tx vap.
                                                     */
+#define VDEV_FLAGS_SCAN_MODE_VAP      0x00000010   /* for Scan Radio vdev will be special vap.
+                                                    * There will not be WMI_VDEV_UP_CMD, there will be only WMI_VDEV_CREATE_CMD
+                                                    * and WMI_VDEV_START_REQUEST_CMD. Based on this parameter need to make decision like
+                                                    * vdev Pause/Unpause at WMI_VDEV_START_REQUEST_CMD.
+                                                    */
 
 typedef struct {
     A_UINT32 tlv_header; /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_create_cmd_fixed_param */
@@ -9638,6 +9658,12 @@ typedef struct {
  * of assoc request/response
  */
 #define WMI_UNIFIED_VDEV_START_LDPC_RX_ENABLED  (1<<3)
+/** Indicates HW encryption is disabled, and SW encryption is enabled.
+ *  If This flag is set, indicates that HW encryption will be disabled
+ *  and SW encryption will be enabled.
+ *  If SW encryption is enabled, key plumbing will not happen in FW.
+ */
+#define WMI_UNIFIED_VDEV_START_HW_ENCRYPTION_DISABLED  (1<<4)
 
 /* BSS color 0-6 */
 #define WMI_HEOPS_COLOR_GET_D2(he_ops) WMI_GET_BITS(he_ops, 0, 6)
@@ -11762,6 +11788,10 @@ typedef struct {
     A_UINT32 frame_inject_period;
     /** Destination address of frame */
     wmi_mac_addr frame_addr1;
+    /** Frame control duration field to be set in CTS_TO_SELF.
+     * Applicable to frame_type WMI_FRAME_INJECT_TYPE_CTS_TO_SELF only.
+     */
+    A_UINT32 fc_duration;
     /** variable buffer length. Can be used for frame template.
      * data is in TLV data[]
      */
@@ -14529,6 +14559,30 @@ typedef struct {
     A_UINT32 btk[ROAM_OFFLOAD_BTK_BYTES>>2]; /* BTK offload. As this 4 byte aligned, we don't declare it as tlv array */
 } wmi_roam_ese_offload_tlv_param;
 
+typedef enum {
+    WMI_BL_REASON_NUD_FAILURE = 1,
+    WMI_BL_REASON_STA_KICKOUT,
+    WMI_BL_REASON_ROAM_HO_FAILURE,
+    /* Assoc resp with status code 71 - POOR RSSI CONDITIONS */
+    WMI_BL_REASON_ASSOC_REJECT_POOR_RSSI,
+    /* Assoc resp with status code 34 - DENIED_POOR_CHANNEL_CONDITIONS */
+    WMI_BL_REASON_ASSOC_REJECT_OCE,
+    WMI_BL_REASON_USERSPACE_BL,
+    WMI_BL_REASON_USERSPACE_AVOID_LIST,
+    WMI_BL_REASON_BTM_DIASSOC_IMMINENT,
+    WMI_BL_REASON_BTM_BSS_TERMINATION,
+    WMI_BL_REASON_BTM_MBO_RETRY,
+    /* Reassoc resp with status code 34 - DENIED_POOR_CHANNEL_CONDITIONS */
+    WMI_BL_REASON_REASSOC_RSSI_REJECT,
+    /* Reassoc resp with status code 17 - DENIED_NO_MORE_STAS */
+    WMI_BL_REASON_REASSOC_NO_MORE_STAS,
+} WMI_BLACKLIST_REASON_ID;
+
+typedef enum {
+    WMI_BL_SOURCE_HOST = 1,
+    WMI_BL_SOURCE_FW,
+} WMI_BLACKLIST_SOURCE_ID;
+
 typedef struct {
     /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_roam_blacklist_with_timeout_tlv_param */
     A_UINT32 tlv_header;
@@ -14538,6 +14592,18 @@ typedef struct {
     A_UINT32 timeout;
     /** rssi (dBm units) when put in blacklist */
     A_INT32 rssi;
+    /* Blacklist reason from WMI_BLACKLIST_REASON_ID */
+    A_UINT32 reason;
+    /* Source of adding AP to BL from WMI_BLACKLIST_SOURCE_ID */
+    A_UINT32 source;
+    /*
+     * timestamp is the absolute time w.r.t host timer which is synchronized
+     * between the host and target.
+     * This timestamp indicates the time when AP added to blacklist.
+     */
+    A_UINT32 timestamp;
+    /* Original timeout value in milli seconds when AP added to BL */
+    A_UINT32 original_timeout;
 } wmi_roam_blacklist_with_timeout_tlv_param;
 
 /** WMI_ROAM_BLACKLIST_EVENT: generated whenever STA needs to move AP to blacklist for a particluar time
@@ -25865,6 +25931,38 @@ typedef struct {
     A_UINT32 wireless_modes_ext;
 } WMI_HAL_REG_CAPABILITIES_EXT2;
 
+/*
+ * This TLV used for Scan Radio RDP
+ * We have an RDP which supports Multiband-Frequency (2Ghz, 5Ghz and 6Ghz)
+ * on a single radio.
+ * The AP acts as a special VAP. There will not be WMI_VDEV_UP_CMD.
+ * This radio is used only for scanning purpose and to send few MGMT frames.
+ * The DFS feature is disabled on this scan radio, since there will not be
+ * much TX traffic.
+ * The Host has to disable CAC timer because DFS feature not supported here.
+ * In order to know about the scan radio RDP and DFS disabled case,
+ * the target has to send this information to Host per pdev via
+ * WMI_SERVICE_READY_EXT2_EVENT.
+ * The target is notified of the special scan VAP by the flags variable
+ * in the WMI_CREATE_CMD.
+ */
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_WMI_SCAN_RADIO_CAPABILITIES_EXT2 */
+    A_UINT32 phy_id;
+    /*
+     * [0] 1 - SCAN_RADIO supported  0 - SCAN_RADIO  not supported
+     * [1] 1 - DFS enabled           0 - DFS disabled
+     * [2:31] reserved
+     */
+    A_UINT32 flags;
+} WMI_SCAN_RADIO_CAPABILITIES_EXT2;
+
+#define WMI_SCAN_RADIO_CAP_SCAN_RADIO_FLAG_GET(flag)         WMI_GET_BITS(flag, 0, 1)
+#define WMI_SCAN_RADIO_CAP_SCAN_RADIO_FLAG_SET(flag, val)    WMI_SET_BITS(flag, 0, 1, val)
+
+#define WMI_SCAN_RADIO_CAP_DFS_FLAG_GET(flag)                WMI_GET_BITS(flag, 1, 1)
+#define WMI_SCAN_RADIO_CAP_DFS_FLAG_SET(flag, val)           WMI_SET_BITS(flag, 1, 1, val)
+
 typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_WMI_SOC_HAL_REG_CAPABILITIES */
     A_UINT32 num_phy;
@@ -25987,6 +26085,16 @@ typedef struct {
     A_UINT32 prio;
 } wmi_therm_throt_level_config_info;
 
+typedef enum {
+    WMI_THERMAL_CLIENT_UNSPECIFIED = 0,
+    WMI_THERMAL_CLIENT_APPS        = 1,
+    WMI_THERMAL_CLIENT_WPSS        = 2,
+    WMI_THERMAL_CLIENT_FW          = 3,
+    WMI_THERMAL_CLIENT_MAX
+} WMI_THERMAL_MITIGATION_CLIENTS;
+
+#define WMI_THERMAL_CLIENT_MAX_PRIORITY 10
+
 typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_therm_throt_config_request_fixed_param */
     A_UINT32 pdev_id;          /* config for each pdev */
@@ -25994,6 +26102,8 @@ typedef struct {
     A_UINT32 dc;               /* duty cycle in ms */
     A_UINT32 dc_per_event;     /* how often (after how many duty cycles) the FW sends stats to host */
     A_UINT32 therm_throt_levels; /* Indicates the number of thermal zone configuration */
+    A_UINT32 client_id;        /* Indicates the client from whom the request is being forwarded to FW. Refer to WMI_THERMAL_MITIGATION_CLIENTS. */
+    A_UINT32 priority;         /* Indicates the priority, higher the value, higher the priority. Varies from 1 to WMI_THERMAL_CLIENT_MAX_PRIORITY. */
     /*
      * Following this structure is the TLV:
      * struct wmi_therm_throt_level_config_info therm_throt_level_config_info[therm_throt_levels];
@@ -28156,6 +28266,18 @@ typedef struct {
     A_UINT32 remaining_disallow_duration;
     /** AP will be allowed for candidate, when AP RSSI better than expected RSSI units in dBm */
     A_INT32 expected_rssi;
+    /* Blacklist reason from WMI_BLACKLIST_REASON_ID */
+    A_UINT32 reason;
+    /* Source of adding AP to BL from WMI_BLACKLIST_SOURCE_ID */
+    A_UINT32 source;
+    /*
+     * timestamp is the absolute time w.r.t host timer which is synchronized
+     * between the host and target.
+     * This timestamp indicates the time when AP added to blacklist.
+     */
+    A_UINT32 timestamp;
+    /* Original timeout value in milli seconds when AP added to BL */
+    A_UINT32 original_timeout;
 } wmi_pdev_bssid_disallow_list_config_param;
 
 typedef enum {
@@ -28390,6 +28512,10 @@ typedef struct {
             A_UINT32 vendor_specific1[7];
         };
     };
+    /* BTM BSS termination timeout value in milli seconds */
+    A_UINT32 btm_bss_termination_timeout;
+    /* BTM MBO assoc retry timeout value in milli seconds */
+    A_UINT32 btm_mbo_assoc_retry_timeout;
 } wmi_roam_trigger_reason;
 
 typedef struct {
@@ -28436,6 +28562,18 @@ typedef struct {
     A_UINT32 cu_score;       /* AP current cu score */
     A_UINT32 total_score;    /* AP total score */
     A_UINT32 etp;            /* AP Estimated Throughput (ETP) value in mbps */
+    /* Blacklist reason from WMI_BLACKLIST_REASON_ID */
+    A_UINT32 bl_reason;
+    /* Source of adding AP to BL from WMI_BLACKLIST_SOURCE_ID */
+    A_UINT32 bl_source;
+    /*
+     * timestamp is the absolute time w.r.t host timer which is synchronized
+     * between the host and target.
+     * This timestamp indicates the time when AP added to blacklist.
+     */
+    A_UINT32 bl_timestamp;
+    /* Original timeout value in milli seconds when AP added to BL */
+    A_UINT32 bl_original_timeout;
 } wmi_roam_ap_info;
 
 typedef enum {

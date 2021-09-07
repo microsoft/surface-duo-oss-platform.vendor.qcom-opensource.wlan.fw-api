@@ -448,6 +448,8 @@ typedef enum {
     WMI_PDEV_ENABLE_DURATION_BASED_TX_MODE_SELECTION_CMDID,
     /* Get DPD status from HALPHY */
     WMI_PDEV_GET_DPD_STATUS_CMDID,
+    /* Set HALPHY CAL bitmap */
+    WMI_PDEV_SET_HALPHY_CAL_BMAP_CMDID,
 
     /* VDEV (virtual device) specific commands */
     /** vdev create */
@@ -1506,6 +1508,9 @@ typedef enum {
     /* Event to get DPD status from HALPHY */
     WMI_PDEV_GET_DPD_STATUS_EVENTID,
 
+    /* Event to set halphy cal bitmap */
+    WMI_PDEV_SET_HALPHY_CAL_BMAP_EVENTID,
+
 
     /* VDEV specific events */
     /** VDEV started event in response to VDEV_START request */
@@ -1575,8 +1580,7 @@ typedef enum {
     WMI_VDEV_BCN_LATENCY_EVENTID,
     /** Disconnect request from FW */
     WMI_VDEV_DISCONNECT_EVENTID,
-    /** Send Smart Monitor related params to host */
-    WMI_VDEV_SMART_MONITOR_EVENTID,
+
 
     /* peer specific events */
     /** FW reauet to kick out the station for reasons like inactivity,lack of response ..etc */
@@ -12304,13 +12308,6 @@ typedef enum {
     /** Value of DTIM to be applied in Suspend mode
      */
     WMI_VDEV_PARAM_FORCE_DTIM_CNT,           /* 0xA8 */
-
-    /* vdev param to configure the Smart Monitor features
-     *  Bit : 0     - enable/disable Trigger frames
-     *  Bit : 1     - enable/disable QOS frames
-     *  Bit : 2-31  - reserved
-     */
-    WMI_VDEV_PARAM_SMART_MONITOR_CONFIG,     /* 0xA9  */
 
 
     /*=== ADD NEW VDEV PARAM TYPES ABOVE THIS LINE ===
@@ -28575,6 +28572,7 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_MLO_READY_CMDID);
         WMI_RETURN_STRING(WMI_MLO_TEARDOWN_CMDID);
         WMI_RETURN_STRING(WMI_VDEV_IGMP_OFFLOAD_CMDID);
+        WMI_RETURN_STRING(WMI_PDEV_SET_HALPHY_CAL_BMAP_CMDID);
     }
 
     return "Invalid WMI cmd";
@@ -29216,7 +29214,7 @@ typedef enum {
 *          (1) disable secondary rate
 */
 /* bit 0-3 of flags is used for scan operation */
-/* bit 0: Avoid scan request from HLOS if bit is set */
+/* bit 0: WLM_FLAGS_SCAN_SUPPRESS, suppress all scan and other bits would be ignored if bit is set */
 
 #define WLM_FLAGS_SCAN_SUPPRESS  1  /* suppress all scan request */
 
@@ -30988,6 +30986,80 @@ typedef struct {
     A_UINT32 pdev_id;        /* PDEV Id set by the command */
     A_UINT32 dpd_status;    /* DPD status obtained from HALPHY, refer to WMI_DPD_STATUS */
 } wmi_pdev_get_dpd_status_evt_fixed_param;
+
+/* WMI_HALPHY_CAL_LIST:
+ *
+ * Below is the list of HALPHY online CAL currently enabled in
+ * WIN chipsets
+ */
+typedef enum {
+    WMI_HALPHY_CAL_ADC = 0,
+    WMI_HALPHY_CAL_BWFILTER,
+    WMI_HALPHY_CAL_PDET_AND_PAL,
+    WMI_HALPHY_CAL_RXDCO,
+    WMI_HALPHY_CAL_COMB_TXLO_TXIQ_RXIQ,
+    WMI_HALPHY_CAL_IBF,
+    WMI_HALPHY_CAL_PA_DROOP,
+    WMI_HALPHY_CAL_DAC,
+    WMI_HALPHY_CAL_ANI,
+    WMI_HALPHY_CAL_NOISE_FLOOR,
+
+    WMI_HALPHY_CAL_MAX_CAL_LIST
+} WMI_HALPHY_CAL_LIST;
+
+/* WMI_HALPHY_CAL_VALID_BITMAP_STATUS
+ *
+ * In WMI wmi_pdev_get_halphy_cal_status_evt_fixed_param
+ * (halphy_cal_valid_bmap member), below enum list must be used
+ * to get which calibration status indication is sent by FW to HOST.
+ * Only if that particular bit it set, corresponding bit of the
+ * halphy_cal_status variable will be valid.
+ */
+typedef enum {
+    WMI_HALPHY_CAL_ADC_BMAP                 = (1 << WMI_HALPHY_CAL_ADC),
+    WMI_HALPHY_CAL_BWFILTER_BMAP            = (1 << WMI_HALPHY_CAL_BWFILTER),
+    WMI_HALPHY_CAL_PDET_AND_PAL_BMAP        = (1 << WMI_HALPHY_CAL_PDET_AND_PAL),
+    WMI_HALPHY_CAL_RXDCO_BMAP               = (1 << WMI_HALPHY_CAL_RXDCO),
+    WMI_HALPHY_CAL_COMB_TXLO_TXIQ_RXIQ_BMAP = (1 << WMI_HALPHY_CAL_COMB_TXLO_TXIQ_RXIQ),
+    WMI_HALPHY_CAL_IBF_BMAP                 = (1 << WMI_HALPHY_CAL_IBF),
+    WMI_HALPHY_CAL_PA_DROOP_BMAP            = (1 << WMI_HALPHY_CAL_PA_DROOP),
+    WMI_HALPHY_CAL_DAC_BMAP                 = (1 << WMI_HALPHY_CAL_DAC),
+    WMI_HALPHY_CAL_ANI_BMAP                 = (1 << WMI_HALPHY_CAL_ANI),
+    WMI_HALPHY_CAL_NOISE_FLOOR_BMAP         = (1 << WMI_HALPHY_CAL_NOISE_FLOOR),
+} WMI_HALPHY_CAL_VALID_BITMAP_STATUS;
+
+typedef struct {
+    A_UINT32 tlv_header;    /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_pdev_set_halphy_cal_bmap_cmd_fixed_param */
+    A_UINT32 pdev_id;       /* PDEV ID set by the command */
+
+    /*
+     * Calibration valid bitmap from HOST, refer to
+     * WMI_HALPHY_CAL_VALID_BITMAP_STATUS.
+     * Based on the bitmap value, HALPHY will set corresponding mask values
+     * to each of the online calibrations
+     */
+    A_UINT32 online_halphy_cals_bmap;
+
+    /* Calibration enable/disable support for home/scan channel
+     *     0 - home channel
+     *     1 - scan channel
+     *     2 - both home and scan channel
+     */
+    A_UINT32 home_scan_channel;
+} wmi_pdev_set_halphy_cal_bmap_cmd_fixed_param;
+
+typedef struct {
+    A_UINT32 tlv_header;    /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_pdev_set_halphy_cal_bmap_evt_fixed_param */
+    A_UINT32 pdev_id;       /* PDEV Id set by the command */
+
+    /* Status indication for calibration
+     *     0 - SUCCESS
+     *     1 - FAIL
+     * This WMI command will by sent from HOST dynamically but only one
+     * at a time. So no need of cookie/request handshake.
+     */
+    A_UINT32 status;
+} wmi_pdev_set_halphy_cal_bmap_evt_fixed_param;
 
 /* below structures are related to Motion Detection. */
 typedef struct {
@@ -34105,16 +34177,6 @@ typedef struct {
  *     WMI_IPV4_ADDR  grp_ip_address[num_mcast_ipv4_addr];
  */
 } wmi_igmp_offload_fixed_param;
-
-typedef struct {
-    /** TLV tag and len; tag equals
-    * WMITLV_TAG_STRUC_wmi_vdev_smart_monitor_event_fixed_param */
-    A_UINT32 tlv_header;
-    /* VDEV identifier */
-    A_UINT32 vdev_id;
-    /** Average RSSI value of Data Frames */
-    A_INT32 avg_rssi_data_dbm;
-} wmi_vdev_smart_monitor_event_fixed_param;
 
 
 

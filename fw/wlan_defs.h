@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, 2018-2021 The Linux Foundation. All rights reserved.*
+ * Copyright (c) 2013-2016, 2018-2021 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -645,7 +645,7 @@ typedef struct {
   } RC_TX_RATE_INFO;
 #endif /* !((NUM_SPATIAL_STREAM > 4) || SUPPORT_11AX) */
 #endif /* CONFIG_MOVE_RC_STRUCT_TO_MACCORE */
-#endif
+#endif /* NUM_SPATIAL_STREAM */
 
 /*
  * Temporarily continue to provide the WHAL_RC_INIT_RC_MASKS def in wlan_defs.h

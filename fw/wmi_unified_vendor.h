@@ -18,7 +18,7 @@
 
 /** @file
  *  This File provides dummy defs for the vendor-specific message content structs defined in wmi_unified.h.
- *  Vendor may replace this file wmi_unified_vendor.h with there own vendor defs header file containing the real vendor defs.
+ *  Vendor may replace this file wmi_unified_vendor.h with their own vendor defs header file containing the real vendor defs.
  **/
 #ifndef _WMI_UNIFIED_VENDOR_H_
 #define _WMI_UNIFIED_VENDOR_H_

@@ -450,6 +450,8 @@ typedef enum {
     WMI_PDEV_GET_DPD_STATUS_CMDID,
     /* Set HALPHY CAL bitmap */
     WMI_PDEV_SET_HALPHY_CAL_BMAP_CMDID,
+    /* Set ACK/CTS response rate. */
+    WMI_PDEV_SET_ACK_CTS_RESP_RATE_CMDID,
 
     /* VDEV (virtual device) specific commands */
     /** vdev create */
@@ -28573,6 +28575,7 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_MLO_TEARDOWN_CMDID);
         WMI_RETURN_STRING(WMI_VDEV_IGMP_OFFLOAD_CMDID);
         WMI_RETURN_STRING(WMI_PDEV_SET_HALPHY_CAL_BMAP_CMDID);
+        WMI_RETURN_STRING(WMI_PDEV_SET_ACK_CTS_RESP_RATE_CMDID);
     }
 
     return "Invalid WMI cmd";
@@ -34178,7 +34181,40 @@ typedef struct {
  */
 } wmi_igmp_offload_fixed_param;
 
+typedef enum {
+    WMI_ACK_CTS_RESP_RATE_CCK_11L_MBPS,
+    WMI_ACK_CTS_RESP_RATE_CCK_5_5L_MBPS,
+    WMI_ACK_CTS_RESP_RATE_CCK_2L_MBPS,
+    WMI_ACK_CTS_RESP_RATE_CCK_1L_MBPS,
+    WMI_ACK_CTS_RESP_RATE_CCK_11S_MBPS,
+    WMI_ACK_CTS_RESP_RATE_CCK_5_5S_MBPS,
+    WMI_ACK_CTS_RESP_RATE_CCK_2S_MBPS,
+    WMI_ACK_CTS_RESP_RATE_OFDM_6_MBPS,
+    WMI_ACK_CTS_RESP_RATE_OFDM_9_MBPS,
+    WMI_ACK_CTS_RESP_RATE_OFDM_12_MBPS,
+    WMI_ACK_CTS_RESP_RATE_OFDM_18_MBPS,
+    WMI_ACK_CTS_RESP_RATE_OFDM_24_MBPS,
+    WMI_ACK_CTS_RESP_RATE_OFDM_36_MBPS,
+    WMI_ACK_CTS_RESP_RATE_OFDM_48_MBPS,
+    WMI_ACK_CTS_RESP_RATE_OFDM_54_MBPS,
+    WMI_ACK_CTS_RESP_RATE_DEFAULT,
+    WMI_ACK_CTS_RESP_RATE_MAX = WMI_ACK_CTS_RESP_RATE_DEFAULT,
+} WMI_ACK_CTS_RESP_RATE;
 
+typedef struct {
+    /** TLV tag and len; tag equals
+    * WMITLV_TAG_STRUCT_wmi_pdev_set_ack_cts_resp_rate_cmd_fixed_param */
+    A_UINT32 tlv_header;
+
+    /** pdev_id for identifying the MAC
+     * See macros starting with WMI_PDEV_ID_ for values.
+     * In non-DBDC case host should set it to 0
+     */
+    A_UINT32 pdev_id;
+
+    WMI_ACK_CTS_RESP_RATE ack_cts_resp_rate;
+
+} wmi_pdev_set_ack_cts_resp_rate_cmd_fixed_param;
 
 /* ADD NEW DEFS HERE */
 

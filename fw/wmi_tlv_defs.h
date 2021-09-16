@@ -1154,6 +1154,7 @@ typedef enum {
     WMITLV_TAG_STRUC_wmi_peer_assoc_mlo_params,
     WMITLV_TAG_STRUC_wmi_pdev_set_halphy_cal_bmap_cmd_fixed_param,
     WMITLV_TAG_STRUC_wmi_pdev_set_halphy_cal_bmap_evt_fixed_param,
+    WMITLV_TAG_STRUC_wmi_pdev_set_ack_cts_resp_rate_cmd_fixed_param,
 } WMITLV_TAG_ID;
 
 /*
@@ -1617,6 +1618,7 @@ typedef enum {
     OP(WMI_MLO_TEARDOWN_CMDID) \
     OP(WMI_VDEV_IGMP_OFFLOAD_CMDID) \
     OP(WMI_PDEV_SET_HALPHY_CAL_BMAP_CMDID) \
+    OP(WMI_PDEV_SET_ACK_CTS_RESP_RATE_CMDID) \
     /* add new CMD_LIST elements above this line */
 
 
@@ -4638,6 +4640,11 @@ WMITLV_CREATE_PARAM_STRUC(WMI_PDEV_GET_DPD_STATUS_CMDID);
 #define WMITLV_TABLE_WMI_PDEV_SET_HALPHY_CAL_BMAP_CMDID(id,op,buf,len) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_pdev_set_halphy_cal_bmap_cmd_fixed_param, wmi_pdev_set_halphy_cal_bmap_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX)
 WMITLV_CREATE_PARAM_STRUC(WMI_PDEV_SET_HALPHY_CAL_BMAP_CMDID);
+
+/* Set ACK/CTS response rate */
+#define WMITLV_TABLE_WMI_PDEV_SET_ACK_CTS_RESP_RATE_CMDID(id,op,buf,len) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_pdev_set_ack_cts_resp_rate_cmd_fixed_param, wmi_pdev_set_ack_cts_resp_rate_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX)
+WMITLV_CREATE_PARAM_STRUC(WMI_PDEV_SET_ACK_CTS_RESP_RATE_CMDID);
 
 /** WMI cmd used to indicate hw_links part of MLO */
 #define WMITLV_TABLE_WMI_MLO_SETUP_CMDID(id,op,buf,len) \

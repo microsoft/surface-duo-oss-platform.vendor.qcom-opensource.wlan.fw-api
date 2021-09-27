@@ -7728,6 +7728,9 @@ typedef enum {
      */
     WMI_PDEV_PARAM_CTRL_FRAME_OBSS_PD_THRESHOLD,
 
+    /* Param to configure the access category for the TWT queue */
+    WMI_PDEV_PARAM_TWT_AC_CONFIG,
+
 
 } WMI_PDEV_PARAM;
 
@@ -8426,6 +8429,8 @@ typedef enum {
     WMI_PKTLOG_EVENT_SW =  0x00000040, /* To support SW defined events */
     WMI_PKTLOG_EVENT_PHY = 0x00000080, /* To support PHY stats */
     WMI_PKTLOG_EVENT_CBF = 0x00000100, /* To support CBF's filter in */
+    /* To support hybrid of events from FW and tx monitor status ring */
+    WMI_PKTLOG_EVENT_HYBRID_TX = 0x00000200,
 } WMI_PKTLOG_EVENT;
 
 typedef enum {
@@ -9304,6 +9309,8 @@ typedef struct {
     A_UINT32 num_probes_tx;
     /** Number of Beacon misses on this interface (accruing over time) */
     A_UINT32 num_beacon_miss;
+    /** time slice duty cycle percentage of this interface*/
+    A_UINT32 time_slice_duty_cycle;
 } wmi_iface_link_stats;
 
 typedef enum {
@@ -10127,6 +10134,33 @@ typedef struct {
     /** total event alloc failure count for qos null tx send */
     A_UINT32 qos_null_tx_send_event_alloc_failed;
 } wmi_ctrl_path_pdev_stats_struct;
+
+typedef struct {
+    /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_ctrl_path_btcoex_stats_struct*/
+    A_UINT32 tlv_header;
+    /** pdev_id for identifying the MAC */
+    A_UINT32 pdev_id;
+    /** Counts the number of BT TX requests */
+    A_UINT32 bt_tx_req_cntr;
+    /** Counts the number of BT RX requests */
+    A_UINT32 bt_rx_req_cntr;
+    /** Counts the number of BT requests that got NACKed */
+    A_UINT32 bt_req_nack_cntr;
+    /** Counts the number of WLAN TX request denied due to scheduled BT activity */
+    A_UINT32 wl_tx_req_nack_schd_bt_reason_cntr;
+    /** Counts the number of WLAN TX request denied due to current BT activity */
+    A_UINT32 wl_tx_req_nack_current_bt_reason_cntr;
+    /** Counts the number of WLAN TX request denied due to other WLAN in TX reason */
+    A_UINT32 wl_tx_req_nack_other_wlan_tx_reason_cntr;
+    /** Counts the number of times the WLAN in TX is aborted after getting ACKed */
+    A_UINT32 wl_in_tx_abort_cntr;
+    /** Counts the number of Auto Response WLAN TX requests */
+    A_UINT32 wl_tx_auto_resp_req_cntr;
+    /** Counts the number of ACKed WLAN TX requests */
+    A_UINT32 wl_tx_req_ack_cntr;
+    /** Counts the number of WLAN TX requests */
+    A_UINT32 wl_tx_req_cntr;
+} wmi_ctrl_path_btcoex_stats_struct;
 
 typedef enum {
     WMI_CTRL_PATH_STATS_ARENA_HRAM,
@@ -13477,6 +13511,8 @@ typedef struct {
     A_UINT32 per_sta_profile_offset;
     /** Quiet IE offset from the beginning of the template. */
     A_UINT32 quiet_ie_offset;
+    /** Flag to check if other IEs are present in per-sta profile */
+    A_UINT32 is_other_ie_present;
 } wmi_bcn_tmpl_ml_params;
 
 typedef struct {
@@ -27436,6 +27472,53 @@ typedef struct {
 #define WMI_PDEV_IS_BEACON_PRIORITY_SET(val) ((val) & WMI_PDEV_BEACON_PRIORITY_BIT)
 #define WMI_PDEV_IS_MGMT_PRIORITY_SET(val) ((val) & WMI_PDEV_MGMT_PRIORITY_BIT)
 
+/*
+ * For Maple 3-way coex, The interface will have following configurable
+ * priority bits to set relative priorities of WLAN/BT/3-radio PTA.
+ * To send below config host will use WMI_COEX_CONFIG_CMD command with
+ * config type WMI_COEX_CONFIG_THREE_WAY_COEX_START
+ * WMI_COEX_CONFIG_THREE_WAY_COEX_RESET
+ *
+ ** Bits 0 to 7 corresponds to Wifi
+ * Bit - 0: QCA_WIFI_BE
+ * Bit - 1: QCA_WIFI_BK
+ * Bit - 2: QCA_WIFI_VI
+ * Bit - 3: QCA_WIFI_VO
+ * Bit - 4: QCA_WIFI_BEACON
+ * Bit - 5: QCA_WIFI_MGMT
+ * Bits 6 - 7: Reserved
+ *
+ ** Bits 8 to 15 corresponds to BT
+ * Bit - 8: QCA_BT_ADVERTISER
+ * Bit - 9: QCA_BT_SCANNER
+ * Bit - 10: QCA_BT_BLE_CONNECTION
+ * Bits 11 to 15: Reserved
+ *
+ ** Bits 16 to 24 corresponds to 3-radio PTA,
+ * It can be anything BT/ZigBee connected to 802.15.4 radio
+ * Bit - 16: QCA_PTA_THIRD_RADIO_LOW
+ * Bit - 17: QCA_PTA_THIRD_RADIO_HIGH
+ * Bits 18 to 24: Reserved
+ *
+ ** Bits 25 to 31 Reserved for future use
+ */
+#define WMI_PDEV_BT_ADVERTISER_PRIORITY_BIT      (1 <<  8)
+#define WMI_PDEV_BT_SCANNER_PRIORITY_BIT         (1 <<  9)
+#define WMI_PDEV_BT_BLE_CONNECTION_PRIORITY_BIT  (1 << 10)
+#define WMI_PDEV_IS_BT_ADVERTISER_PRIORITY_SET(val) \
+    ((val) & WMI_PDEV_BT_ADVERTISER_PRIORITY_BIT)
+#define WMI_PDEV_IS_BT_SCANNER_PRIORITY_SET(val) \
+    ((val) & WMI_PDEV_BT_SCANNER_PRIORITY_BIT)
+#define WMI_PDEV_IS_BT_BLE_CONNECTION_PRIORITY_SET(val) \
+    ((val) & WMI_PDEV_BT_BLE_CONNECTION_PRIORITY_BIT)
+
+#define WMI_PDEV_PTA_THIRD_RADIO_LOW_PRIORITY_BIT  (1 << 16)
+#define WMI_PDEV_PTA_THIRD_RADIO_HIGH_PRIORITY_BIT (1 << 17)
+#define WMI_PDEV_IS_PTA_THIRD_RADIO_LOW_PRIORITY_SET(val) \
+    ((val) & WMI_PDEV_PTA_THIRD_RADIO_LOW_PRIORITY_BIT)
+#define WMI_PDEV_IS_PTA_THIRD_RADIO_HIGH_PRIORITY_SET(val) \
+    ((val) & WMI_PDEV_PTA_THIRD_RADIO_HIGH_PRIORITY_BIT)
+
 typedef enum wmi_coex_algo_type  {
     WMI_COEX_ALGO_UNCONS_FREERUN  = 0,
     WMI_COEX_ALGO_FREERUN         = 1,
@@ -27774,6 +27857,7 @@ typedef enum {
     WMI_REQUEST_CTRL_PATH_CALIBRATION_STAT  = 5,
     WMI_REQUEST_CTRL_PATH_DFS_CHANNEL_STAT  = 6,
     WMI_REQUEST_CTRL_PATH_AWGN_STAT         = 7,
+    WMI_REQUEST_CTRL_PATH_BTCOEX_STAT       = 8,
 } wmi_ctrl_path_stats_id;
 
 typedef enum {
@@ -29609,7 +29693,7 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_VDEV_SET_MU_SNIF_CMDID);
     }
 
-    return "Invalid WMI cmd";
+    return (A_UINT8 *) "Invalid WMI cmd";
 }
 #endif /* WMI_CMD_STRINGS */
 
@@ -31003,6 +31087,13 @@ typedef struct {
      */
     A_UINT32 sp_start_tsf_lo; /* bits 31:0 */
     A_UINT32 sp_start_tsf_hi; /* bits 63:32 */
+
+    /*
+     * In announced mode, wait for announce timeout before explicit announce
+     * using QoS NULL.
+     * If set to 0, FW will send QoS NULL immediately.
+     */
+    A_UINT32 announce_timeout_us;
 } wmi_twt_add_dialog_cmd_fixed_param;
 
 /* status code of adding TWT dialog */
